@@ -1,0 +1,5 @@
+@EndUserText.label: 'Piotr''s Flight Travel Service Definition'
+define service Z15_Travel {
+  expose Z15_C_TRAVEL     as Travel;
+  expose Z15_C_TRAVELITEM;
+}

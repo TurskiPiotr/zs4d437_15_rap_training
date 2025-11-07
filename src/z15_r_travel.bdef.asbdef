@@ -1,0 +1,163 @@
+managed implementation in class zbp_15_r_travel unique;
+strict ( 2 );
+with draft;
+
+extensible
+{
+    with additional save;
+    with validations on save;
+    with determinations on modify;
+    with determinations on save;
+}
+
+define behavior for Z15_R_TRAVEL alias Travel
+persistent table z15_travel ##UNMAPPED_FIELD
+draft table z15_travel_d
+lock master
+total etag ChangedAt
+authorization master ( instance )
+etag master LocChangedAt //ChangedAt
+early numbering
+with additional save
+extensible
+{
+
+  association _TravelItem { create; with draft; }
+
+  create ( authorization : global );
+  update ( features : instance );
+  delete;
+  field ( readonly ) Status, Duration, ChangedAt, ChangedBy, LocChangedAt;
+  //  field ( readonly : update, mandatory : create ) AgencyId, TravelId;
+  field ( readonly ) AgencyId, TravelId;
+  field ( mandatory )
+  Description,
+  //CustomerId, BeginDate,
+  EndDate;
+  field ( features : instance ) CustomerID, BeginDate;
+
+  action ( features : instance ) cancel_travel;
+
+  draft action Edit;
+  draft action Activate optimized;
+  draft action Discard;
+  draft action Resume;
+  draft determine action Prepare extensible
+  {
+    validation validateDescription;
+    validation validateCustomer;
+    //  validation validateBeginDate;
+    //  validation validateEndDate;
+    //  validation validateDateSequence
+    validation Item~validateFlightDate;
+  }
+
+  validation validateDescription on save { create; field Description; }
+  validation validateCustomer on save { create; field CustomerId; }
+
+  determination determineDuration on save { field BeginDate, EndDate; }
+  determination determineStatus on modify { create; }
+  determine action checkCustomer
+  {
+    validation validateCustomer;
+  }
+
+  determine action adjustDuration
+  {
+    //    validation validateBeginDate;
+    //    validation validateEnddate;
+    //    validation validateDateSequence;
+    determination determineDuration;
+  }
+
+  side effects
+  {
+    determine action adjustDuration
+    executed on field BeginDate, field EndDate
+    affects field Duration,
+        messages; }
+
+  event TravelCreated parameter Z15_A_Event;
+
+  mapping for z15_travel corresponding ##unextensible_mapping
+    {
+      AgencyId     = agency_id;
+      TravelId     = travel_id;
+      Description  = description;
+      CustomerId   = customer_id;
+      BeginDate    = begin_date;
+      EndDate      = end_date;
+      Status       = status;
+      ChangedAt    = changed_at;
+      ChangedBy    = changed_by;
+      LocChangedAt = loc_changed_at;
+    }
+
+}
+
+define behavior for Z15_R_TRAVELITEM alias Item
+//persistent table z15_tritem
+//with additional save
+with unmanaged save
+draft table z15_tritem_d
+authorization dependent by _Travel
+lock dependent by _Travel
+etag master LocChangedAt
+extensible
+{
+
+  association _Travel { with draft; }
+
+  update;
+  delete;
+
+  field ( readonly, numbering : managed ) ItemUuid;
+  field ( readonly ) AgencyId, TravelId;
+
+  validation validateFlightDate on save
+  {
+    create;
+    field FlightDate;
+  }
+
+  determination determineTravelDates on save
+  {
+    field FlightDate;
+  }
+
+  mapping for z15_tritem corresponding      ##unextensible_mapping
+    {
+      ItemUuid           = item_uuid;
+      AgencyId           = agency_id;
+      TravelId           = travel_id;
+      CarrierId          = carrier_id;
+      ConnectionId       = connection_id;
+      FlightDate         = flight_date;
+      BookingId          = booking_id;
+      PassengerFirstName = passenger_first_name;
+      PassengerLastName  = passenger_last_name;
+      ChangedAt          = changed_at;
+      ChangedBy          = changed_by;
+      LocChangedAt       = loc_changed_at;
+    }
+
+  mapping for /lrn/437_s_tritem
+  control /lrn/437_s_tritemx
+  corresponding                             ##unextensible_mapping
+    {
+      ItemUuid           = item_uuid;
+      AgencyId           = agency_id;
+      TravelId           = travel_id;
+      CarrierId          = carrier_id;
+      ConnectionId       = connection_id;
+      FlightDate         = flight_date;
+      BookingId          = booking_id;
+      PassengerFirstName = passenger_first_name;
+      PassengerLastName  = passenger_last_name;
+      ChangedAt          = changed_at;
+      ChangedBy          = changed_by;
+      LocChangedAt       = loc_changed_at;
+    }
+
+
+}
